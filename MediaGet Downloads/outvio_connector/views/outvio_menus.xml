@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<odoo>
+  <record id="action_outvio_config_settings" model="ir.actions.act_window">
+    <field name="name">Outvio Settings</field>
+    <field name="type">ir.actions.act_window</field>
+    <field name="res_model">res.config.settings</field>
+    <field name="view_id" ref="res_config_settings_view_form"></field>
+    <field name="view_mode">form</field>
+    <field name="target">inline</field>
+    <field name="context">{'module': 'outvio_connector'}</field>
+  </record>
+
+  <!-- Top menu item -->
+  <menuitem id="outvio_menu_root" name="Outvio" web_icon="outvio_connector,static/description/icon.png" sequence="25" />
+
+  <menuitem id="outvio_configuration" name="Configuration" parent="outvio_menu_root" sequence="100"/>
+
+  <menuitem id="outvio_settings" name="Settings" action="action_outvio_config_settings" parent="outvio_configuration" sequence="10"/>
+</odoo>
