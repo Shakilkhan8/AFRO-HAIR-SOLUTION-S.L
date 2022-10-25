@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_odoo_laravel_connector,odoo.laravel.connector,model_odoo_laravel_connector,,1,1,1,1
+access_laravel_connector_operations,laravel.connector.operations,model_laravel_connector_operations,,1,1,1,1

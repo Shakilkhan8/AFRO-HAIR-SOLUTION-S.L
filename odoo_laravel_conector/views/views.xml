@@ -1,0 +1,107 @@
+<odoo>
+    <data>
+        <record id="odoo_laravel_connector_form" model="ir.ui.view">
+            <field name="name">Laravel Connector</field>
+            <field name="model">odoo.laravel.connector</field>
+            <field name="arch" type="xml">
+                <form string="Create Laravel Instance">
+                    <header>
+                        <field name="status" widget="statusbar" statusbar_visible="connected,disconnected"
+                               statusbar_colors='{"disconnected":"red","connected":"blue"}'></field>
+                    </header>
+                    <sheet>
+                        <group>
+                            <group>
+                                <div style="margin-bottom:20px">
+                                    <h2 style="color: #687cb3;">
+                                        <b>Laravel Connector</b>
+                                    </h2>
+                                </div>
+                                <field name="access_token"/>
+                                <field name="requested_url"/>
+
+                                <div style="margin-top: 40px;margin-left: 150px;">
+                                    <button name="laravel_login" string="Login" type="object"
+                                            class="btn-primary" attrs="{'invisible':[('status','=','connected')]}"/>
+                                </div>
+                                <div style="margin-top: 40px;">
+                                    <button name="laravel_logout" string="Logout" type="object"
+                                            class="btn-danger btn-primary"
+                                            attrs="{'invisible':[('status','=','disconnected')]}"/>
+                                </div>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="odoo_laravel_connector_window">
+            <field name="name">Odoo Laravel Connector</field>
+            <field name="res_model">odoo.laravel.connector</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+        <menuitem name="Laravel Connector" id="odoo_laravel_connector_menu_root" sequence="9"/>
+
+
+        <menuitem name="Create Instance" id="odoo_laravel_connector_instance_menu"
+                  parent="odoo_laravel_connector_menu_root"
+                  action="odoo_laravel_connector_window" sequence="1"/>
+
+        <menuitem name="Products" id="odoo_laravel_connector_product"
+                  parent="odoo_laravel_connector_menu_root" sequence="2"/>
+
+        <record model="ir.actions.server" id="laravel_operation_server_action">
+            <field name="name">laravel_operation_server_action</field>
+            <field name="model_id" ref="model_odoo_laravel_connector"/>
+            <field name="state">code</field>
+            <field name="code">
+                action = {
+                "name": 'Operation',
+                "res_model": "laravel.connector.operations",
+                "type": "ir.actions.act_window",
+                'view_mode': 'form',
+                'target': 'new',
+                }
+            </field>
+        </record>
+        <menuitem name="Operations" id="odoo_laravel_connector_operations"
+                  parent="odoo_laravel_connector_menu_root" sequence="3" action="laravel_operation_server_action"/>
+
+
+        <!--        &&&&&&&&&&&&&&&&& PRODUCT CATEGORY VIEW &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&-->
+        <record model="ir.actions.server" id="laravel_product_category_server_action">
+            <field name="name">laravel_product_category_server_action</field>
+            <field name="model_id" ref="model_odoo_laravel_connector"/>
+            <field name="state">code</field>
+            <field name="code">
+                action = {
+                "name": 'Product Category',
+                "res_model": "product.category",
+                "type": "ir.actions.act_window",
+                "view_mode": "tree,form",
+                }
+            </field>
+        </record>
+        <menuitem name="Product Category" id="odoo_laravel_connector_category_menu"
+                  parent="odoo_laravel_connector_product" sequence="1" action="laravel_product_category_server_action"/>
+
+        <!--        &&&&&&&&&&&&&&&&& PRODUCT BRAND VIEW &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&-->
+        <record model="ir.actions.server" id="laravel_product_brand_server_action">
+            <field name="name">laravel_product_brand_server_action</field>
+            <field name="model_id" ref="model_odoo_laravel_connector"/>
+            <field name="state">code</field>
+            <field name="code">
+                action = {
+                "name": 'Product Brands',
+                "res_model": "product.brand",
+                "type": "ir.actions.act_window",
+                "view_mode": "tree,form",
+                }
+            </field>
+        </record>
+        <menuitem name="Product Brands" id="odoo_laravel_connector_brands_menu"
+                  parent="odoo_laravel_connector_product" sequence="2" action="laravel_product_brand_server_action"/>
+
+    </data>
+</odoo>
