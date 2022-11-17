@@ -27,6 +27,7 @@
         'security/ir.model.access.csv',
         'views/operations.xml',
         'views/views.xml',
+        'views/customization.xml',
         'views/templates.xml',
     ],
     # only loaded in demonstration mode

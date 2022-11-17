@@ -1,0 +1,26 @@
+<odoo>
+    <record id="lara_inherit_contacts_form" model="ir.ui.view">
+        <field name="name">lara_inherit_contacts_form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='vat']" position="after">
+                <field name="shipp_addr"/>
+                <field name="bill_addr"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="lara_inherit_sale_order_form" model="ir.ui.view">
+        <field name="name">lara_inherit_sale_order_form</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="shipping_addr"/>
+                <field name="billing_addr"/>
+                <field name="laravel_order_status"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
