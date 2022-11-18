@@ -3,6 +3,7 @@ import requests
 
 from odoo import models, fields, api, _
 
+
 class LaravelInheritContacts(models.Model):
     _inherit = "res.partner"
 
@@ -55,16 +56,19 @@ class LaravelInheritSaleOrder(models.Model):
     _inherit = "sale.order"
 
     unique_id = fields.Char(required=False)
-    shipping_addr = fields.Char('Shipping Address', required=False,)
+    shipping_addr = fields.Char('Shipping Address', required=False, )
     billing_addr = fields.Char('Billing Address', required=False)
-    laravel_order_status = fields.Selection(string="", selection=[('PENDING', 'Pending'), ('FAILED', 'Failed'),('DELIVERED', 'Delivered'), ('CANCELLED', 'Cancelled') ], required=False, )
+    laravel_order_status = fields.Selection(string="", selection=[('PENDING', 'Pending'), ('FAILED', 'Failed'),
+                                                                  ('DELIVERED', 'Delivered'),
+                                                                  ('CANCELLED', 'Cancelled')], required=False, )
 
 
 class LaravelConnectorOperations(models.TransientModel):
     _name = 'laravel.connector.operations'
 
     name = fields.Selection(string="Select Operation",
-                            selection=[('customer', 'Customers'),('p_variant', 'Product Variant'), ('p_category', 'Product Category'),
+                            selection=[('customer', 'Customers'), ('p_variant', 'Product Variant'),
+                                       ('p_category', 'Product Category'),
                                        ('p_brand', 'Product Brand'), ('product', 'Product'), ('orders', 'Orders')],
                             required=True, )
 
@@ -163,69 +167,89 @@ class LaravelConnectorOperations(models.TransientModel):
         if data:
             for li in data:
                 for rec in li:
-                    if rec['varients']:
-                        variant_data = rec['varients']
-                        variant_attributes = dict()
-                        for var in variant_data:
-                            if str(var.get('varient_type_id')) in variant_attributes:
-                                list_vals = variant_attributes[str(var.get('varient_type_id'))]
-                                variant_attributes[str(var.get('varient_type_id'))] = list_vals + [var.get('varient_value_id')]
-                            else:
-                                variant_attributes[str(var.get('varient_type_id'))] = [var.get('varient_value_id')]
+                    if rec:
+                        try:
+                            variant_data = rec['varients']
+                            variant_attributes = dict()
+                            for var in variant_data:
+                                if str(var.get('varient_type_id')) in variant_attributes:
+                                    list_vals = variant_attributes[str(var.get('varient_type_id'))]
+                                    variant_attributes[str(var.get('varient_type_id'))] = list_vals + [
+                                        var.get('varient_value_id')]
+                                else:
+                                    variant_attributes[str(var.get('varient_type_id'))] = [var.get('varient_value_id')]
 
+                            # -----------------attribute_line_ids -----------------------------------------
+                            attr_line_list = []
+                            variants_ids_list = []
+                            attribute_values_ids = []
+                            for attr, value in variant_attributes.items():
+                                attribute_id = self.env['product.attribute'].search([('unique_id', '=', int(attr))])
+                                for val in value:
+                                    val_id = self.env['product.attribute.value'].search([('unique_id', '=', val)]).id
+                                    if val_id:
+                                        attribute_values_ids.append(val_id)
+                                        variants_ids_list.append(val)
+                                # attribute_values_ids = [
+                                #     self.env['product.attribute.value'].search([('unique_id', '=', val)]).id for val in
+                                #     value if self.env['product.attribute.value'].search([('unique_id', '=', val)]).id]
 
- #-----------------attribute_line_ids -----------------------------------------
-                    attr_line_list = []
-                    if rec['varients']:
-                        for attr, value in variant_attributes.items():
-                            attribute_id = self.env['product.attribute'].search([('unique_id','=',int(attr))])
-                            attribute_values_ids = [self.env['product.attribute.value'].search([('unique_id','=',val)]).id for val in value]
+                                attr_line_list.append(
+                                    (0, 0, {'attribute_id': attribute_id.id, 'value_ids': attribute_values_ids}))
+                        except Exception as e:
+                            raise models.ValidationError(
+                                f"Something went in attributes {rec['id']}, {e}")
 
-                            attr_line_list.append((0, 0,{'attribute_id': attribute_id.id, 'value_ids': attribute_values_ids } ))
+                        unique_id = self.env['product.template'].search([]).mapped('unique_id')
+                        if not str(rec['id']) in unique_id:
+                            prod_vals = {
+                                'name': rec['title'],
+                                'unique_id': rec['id'],
+                                'barcode': rec['sku'],
+                                'detailed_type': 'product'
+                            }
 
+                            if attr_line_list:
+                                prod_vals['attribute_line_ids'] = attr_line_list
 
+                            try:
+                                create_product = self.env['product.template'].create(prod_vals)
+                            except Exception as e:
 
-                    unique_id = self.env['product.template'].search([]).mapped('unique_id')
-                    if not str(rec['id']) in unique_id:
-
-                        create_product = self.env['product.template'].create({
-                            'name': rec['title'],
-                            'unique_id': rec['id'],
-                            'barcode': rec['sku'],
-                            'detailed_type' : 'product',
-                            'attribute_line_ids': attr_line_list
-                        })
+                                raise models.ValidationError(
+                                    f"Something went in product create {rec['id'], prod_vals}")
 
                         variants = create_product.product_variant_ids
-                        if variants:
+                        if rec['varients'] and variants:
+
                             for vr in variants:
                                 for vd in variant_data:
-                                    vd_product_attribute = self.env['product.attribute'].search([('unique_id', '=', vd['varient_type_id'])])
-                                    vd_attribute_value_name = [ i.name for i in vd_product_attribute.value_ids if int(i.unique_id) == vd['varient_value_id']]
-                                    if vd_product_attribute.name == vr.attribute_line_ids.display_name and vd_attribute_value_name[0] == vr.product_template_attribute_value_ids.name:
-                                        location = self.env.ref('stock.stock_location_stock')
+                                    if vd['varient_value_id'] in variants_ids_list:
+                                        vd_product_attribute = self.env['product.attribute'].search(
+                                            [('unique_id', '=', vd['varient_type_id'])])
+                                        vd_attribute_value_name = [i.name for i in vd_product_attribute.value_ids if
+                                                                   int(i.unique_id) == vd['varient_value_id']]
+                                        try:
+                                            if vd_product_attribute.name == vr.attribute_line_ids.display_name and \
+                                                    vd_attribute_value_name[0] == vr.product_template_attribute_value_ids.name:
+                                                location = self.env.ref('stock.stock_location_stock')
 
-                                        self.env['stock.quant']._update_available_quantity(vr, location, float(vd['stock']))
-                                        vr.update({
-                                            'standard_price': float(vd['mrp_price']),
-                                            'lst_price': float(vd['sell_price']),
-                                            # 'qty_available': float(vd['stock'])
-                                        })
+                                                self.env['stock.quant']._update_available_quantity(vr, location,
+                                                                                                   float(vd['stock']))
+                                                vr.update({
+                                                    'standard_price': float(vd['mrp_price']),
+                                                    'lst_price': float(vd['sell_price']),
+                                                    # 'qty_available': float(vd['stock'])
+                                                })
+                                        except Exception as e:
+                                            raise models.ValidationError(
+                                                f"Something went in update quantity {rec['id']}")
+                        attr_line_list.clear()
+                        variants_ids_list.clear()
+                        attribute_values_ids.clear()
 
 
-                        #         product_variant = self.env['product.product'].create({
-                        #             'name': rec['title'],
-                        #             'unique_id': variant['id'],
-                        #             'prod_template': create_product.id,
-                        #             'lst_price': variant['sell_price'],
-                        #             'qty_available': variant['stock'],
-                        #             'detailed_type': 'product'
-                        #         })
-                        #         self.env['stock.quant'].create({
-                        #             "product_id": product_variant.id,
-                        #             "location_id": 8,
-                        #             "quantity": 10,
-                        #         })
+
 
 
     def create_orders(self, *data):
