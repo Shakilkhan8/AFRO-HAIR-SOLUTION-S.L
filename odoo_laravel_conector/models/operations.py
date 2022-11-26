@@ -261,7 +261,9 @@ class LaravelConnectorOperations(models.TransientModel):
                 for rec in li:
                     unique_id = self.env['sale.order'].search([]).mapped('unique_id')
                     if not str(rec['id']) in unique_id:
-                        partner_rec = self.env['res.partner'].browse(int(rec['user_id']))
+#                         partner_rec = self.env['res.partner'].browse(int(rec['user_id']))
+                        partner_rec = self.env['res.partner'].search(
+                            [('unique_id', '=', rec['user_id'])], limit=1)
                         create_order = self.env['sale.order'].create({
                             'partner_id': partner_rec.id,
                             'unique_id': rec['id'],
