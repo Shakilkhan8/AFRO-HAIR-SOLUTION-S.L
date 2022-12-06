@@ -206,7 +206,8 @@ class LaravelConnectorOperations(models.TransientModel):
                                 'name': rec['title'],
                                 'unique_id': rec['id'],
                                 'barcode': rec['sku'],
-                                'detailed_type': 'product'
+                                'detailed_type': 'product',
+                                # 'brand_id' : int(rec['brand'])
                             }
 
                             if attr_line_list:
@@ -217,7 +218,7 @@ class LaravelConnectorOperations(models.TransientModel):
                             except Exception as e:
 
                                 raise models.ValidationError(
-                                    f"Something went in product create {rec['id'], prod_vals}")
+                                    f"Something went in product create {rec['id'], e}")
 
                         variants = create_product.product_variant_ids
                         if rec['varients'] and variants:
@@ -231,7 +232,8 @@ class LaravelConnectorOperations(models.TransientModel):
                                                                    int(i.unique_id) == vd['varient_value_id']]
                                         try:
                                             if vd_product_attribute.name == vr.attribute_line_ids.display_name and \
-                                                    vd_attribute_value_name[0] == vr.product_template_attribute_value_ids.name:
+                                                    vd_attribute_value_name[
+                                                        0] == vr.product_template_attribute_value_ids.name:
                                                 location = self.env.ref('stock.stock_location_stock')
 
                                                 self.env['stock.quant']._update_available_quantity(vr, location,
@@ -239,6 +241,8 @@ class LaravelConnectorOperations(models.TransientModel):
                                                 vr.update({
                                                     'standard_price': float(vd['mrp_price']),
                                                     'lst_price': float(vd['sell_price']),
+                                                    # 'unique_id': str(vd['id'])
+
                                                     # 'qty_available': float(vd['stock'])
                                                 })
                                         except Exception as e:
@@ -248,17 +252,15 @@ class LaravelConnectorOperations(models.TransientModel):
                         variants_ids_list.clear()
                         attribute_values_ids.clear()
 
-
-
-
-
     def create_orders(self, *data):
         if data:
             for li in data:
                 for rec in li:
                     unique_id = self.env['sale.order'].search([]).mapped('unique_id')
                     if not str(rec['id']) in unique_id:
-                        partner_rec = self.env['res.partner'].browse(int(rec['user_id']))
+                        # partner_rec = self.env['res.partner'].browse(int(rec['user_id']))
+                        partner_rec = self.env['res.partner'].search(
+                            [('unique_id', '=', rec['user_id'])], limit=1)
                         create_order = self.env['sale.order'].create({
                             'partner_id': partner_rec.id,
                             'unique_id': rec['id'],
@@ -266,19 +268,29 @@ class LaravelConnectorOperations(models.TransientModel):
                             'shipping_addr': partner_rec.shipp_addr,
                             'billing_addr': partner_rec.bill_addr,
                         })
-                        if rec['product_details']:
-                            for line in rec['product_details']:
-                                prod = self.env['product.product'].search(
-                                    [('unique_id', '=', line['id'])])
-                                if prod:
-                                    line = self.env['sale.order.line']
-                                    create_order.write({
-                                        'order_line': [(0, 0, {
-                                            'product_id': prod.id,
-                                            'name': 'test',
-                                        })],
-                                    })
-                                o = 'done'
+                        try:
+                            if rec['product_details']:
+                                for dic in rec['product_details']:
+                                    prod = self.env['product.product'].search(
+                                        [('unique_id', '=', dic['id'])], limit=1)
+                                    if prod:
+                                        line = self.env['sale.order.line']
+                                        create_order.write({
+                                            'order_line': [(0, 0, {
+                                                'product_id': prod.id,
+                                                'name': prod.display_name,
+                                                'product_uom_qty': float(dic['quantity']),
+                                                'price_unit': float(dic['sold_price'])
+                                            })],
+                                        })
+                                if rec['status'] == 'DELIVERED':
+                                    create_order.action_confirm()
+                                    create_order.picking_ids._action_done()
+                                    create_order._create_invoices()
+
+                        except Exception as e:
+                            raise models.ValidationError(
+                                f"Something went in line {rec['id']}")
 
     def sync_action(self):
         for rec in self:

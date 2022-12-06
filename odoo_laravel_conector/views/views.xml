@@ -103,5 +103,26 @@
         <menuitem name="Product Brands" id="odoo_laravel_connector_brands_menu"
                   parent="odoo_laravel_connector_product" sequence="2" action="laravel_product_brand_server_action"/>
 
+        <!--        &&&&&&&&&&&&&&&&& PRODUCT &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&-->
+        <record model="ir.actions.server" id="laravel_product_template_server_action">
+            <field name="name">laravel_product_template_server_action</field>
+            <field name="model_id" ref="model_odoo_laravel_connector"/>
+            <field name="state">code</field>
+            <field name="code">
+                action = {
+                "name": 'Products',
+                "res_model": "product.template",
+                "type": "ir.actions.act_window",
+                "view_mode": "kanban,tree,form",
+                "domain": [('unique_id','!=',False)],
+                'target': 'current',
+                }
+            </field>
+        </record>
+
+        <menuitem name="Products" id="odoo_laravel_connector_product_template"
+                  parent="odoo_laravel_connector_product" sequence="4"
+                  action="laravel_product_template_server_action"/>
+
     </data>
 </odoo>
