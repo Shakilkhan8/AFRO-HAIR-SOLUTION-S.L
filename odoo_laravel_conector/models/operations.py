@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import base64
+
 import requests
 
 from odoo import models, fields, api, _
@@ -15,6 +17,7 @@ class LaravelInheritContacts(models.Model):
 class LaravelInheritProductCategory(models.Model):
     _inherit = "product.category"
     unique_id = fields.Char(required=False)
+
 
 
 class LaravelInheritProductBrand(models.Model):
@@ -202,11 +205,13 @@ class LaravelConnectorOperations(models.TransientModel):
 
                         unique_id = self.env['product.template'].search([]).mapped('unique_id')
                         if not str(rec['id']) in unique_id:
+                            url = 'https://mastbeauty.com/public/'+rec.get('productsimage')[0].get('image')
                             prod_vals = {
                                 'name': rec['title'],
                                 'unique_id': rec['id'],
                                 'barcode': rec['sku'],
                                 'detailed_type': 'product',
+                                'image_1920': base64.b64encode(requests.get(url).content)
                                 # 'brand_id' : int(rec['brand'])
                             }
 
@@ -229,10 +234,11 @@ class LaravelConnectorOperations(models.TransientModel):
                                         vd_product_attribute = self.env['product.attribute'].search(
                                             [('unique_id', '=', vd['varient_type_id'])])
                                         vd_attribute_value_name = [i.name for i in vd_product_attribute.value_ids if
-                                                                   int(i.unique_id) == vd['varient_value_id']]
+                                                                   i.unique_id == vd['varient_value_id']]
                                         try:
                                             if vd_product_attribute.name == vr.attribute_line_ids.display_name and \
-                                                    vd_attribute_value_name[0] == vr.product_template_attribute_value_ids.name:
+                                                    vd_attribute_value_name[
+                                                        0] == vr.product_template_attribute_value_ids.name:
                                                 location = self.env.ref('stock.stock_location_stock')
 
                                                 self.env['stock.quant']._update_available_quantity(vr, location,
@@ -251,17 +257,13 @@ class LaravelConnectorOperations(models.TransientModel):
                         variants_ids_list.clear()
                         attribute_values_ids.clear()
 
-
-
-
-
     def create_orders(self, *data):
         if data:
             for li in data:
                 for rec in li:
                     unique_id = self.env['sale.order'].search([]).mapped('unique_id')
                     if not str(rec['id']) in unique_id:
-#                         partner_rec = self.env['res.partner'].browse(int(rec['user_id']))
+                        # partner_rec = self.env['res.partner'].browse(int(rec['user_id']))
                         partner_rec = self.env['res.partner'].search(
                             [('unique_id', '=', rec['user_id'])], limit=1)
                         create_order = self.env['sale.order'].create({
@@ -294,7 +296,6 @@ class LaravelConnectorOperations(models.TransientModel):
                         except Exception as e:
                             raise models.ValidationError(
                                 f"Something went in line {rec['id']}")
-
 
     def sync_action(self):
         for rec in self:
