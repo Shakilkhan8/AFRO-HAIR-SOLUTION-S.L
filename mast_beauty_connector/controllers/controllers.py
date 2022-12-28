@@ -160,6 +160,7 @@ class MastBeautyConnectorController(http.Controller):
         prod_template_rec = request.env['product.product'].search([])
         product_template_list = [{
             'id': rec.id,
+            'name': rec.name,
             'can_be_sold': rec.sale_ok,
             'can_be_purchase': rec.purchase_ok,
             'product_type': rec.type,
@@ -169,4 +170,13 @@ class MastBeautyConnectorController(http.Controller):
         } for rec in prod_template_rec]
 
         return product_template_list
+
+
+    @http.route('/update/product/variants/id', type='json', auth='user')
+    def update_product_variants_id(self, **rec):
+        product_var = request.env['product.product'].browse(rec.get('id'))
+        del rec['id']
+        if product_var:
+            product_var.update(rec)
+            return {'id': 'success'}
 
