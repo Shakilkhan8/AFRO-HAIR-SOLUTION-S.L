@@ -115,6 +115,7 @@ class MastBeautyConnectorController(http.Controller):
     def view_product_attribute(self):
         attribute = request.env['product.attribute'].search([])
         record = [{
+            'id': rec.id,
             'name': rec.name,
             'value_ids': [{'id': vals.id, 'name': vals.name} for vals in rec.value_ids]
         } for rec in attribute ]
