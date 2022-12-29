@@ -186,7 +186,7 @@ class MastBeautyConnectorController(http.Controller):
             'cost_price': rec.standard_price,
         } for rec in product_variant]
 
-        return product_variant
+        return product_variant_list
 
 
     @http.route('/update/product/variants/id', type='json', auth='user')
