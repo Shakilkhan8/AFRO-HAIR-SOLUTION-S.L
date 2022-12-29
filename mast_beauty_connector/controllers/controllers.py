@@ -171,6 +171,40 @@ class MastBeautyConnectorController(http.Controller):
 
         return product_template_list
 
+    @http.route('/view/product/variants/id', type='json', auth='user')
+    def view_product_variants_id(self, **rec):
+        product_variant_list = []
+        prod_obj = request.env['product.product']
+        models_ids = request.env['product.product'].browse(rec.get('id'))
+
+        for model in models_ids:
+            new_dict = model.read(list(set(prod_obj._fields)))
+            product_variant_list.append(new_dict)
+
+        return {'result': product_variant_list}
+
+
+
+
+
+
+
+
+
+        product_variant = request.env['product.product'].browse(rec.get('id'))
+        product_variant_list = [{
+            'id': rec.id,
+            'name': rec.name,
+            'can_be_sold': rec.sale_ok,
+            'can_be_purchase': rec.purchase_ok,
+            'product_type': rec.type,
+            'product_category_id': rec.categ_id.id,
+            'sale_price': rec.list_price,
+            'cost_price': rec.standard_price,
+        } for rec in product_variant]
+
+        return product_variant
+
 
     @http.route('/update/product/variants/id', type='json', auth='user')
     def update_product_variants_id(self, **rec):
