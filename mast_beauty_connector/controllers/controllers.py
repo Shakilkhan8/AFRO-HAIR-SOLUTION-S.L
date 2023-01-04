@@ -173,7 +173,7 @@ class MastBeautyConnectorController(http.Controller):
 
     @http.route('/view/product/variants/id', type='json', auth='user')
     def view_product_variants_id(self, **rec):
-        
+
         product_variant = request.env['product.product'].browse(rec.get('id'))
         product_variant_list = [{
             'id': rec.id,
@@ -197,3 +197,35 @@ class MastBeautyConnectorController(http.Controller):
             product_var.update(rec)
             return {'id': 'success'}
 
+    @http.route('/view/sale/orders', type='json', auth='user')
+    def view_sale_order(self):
+        lst_orders = []
+        sale_order_obj = request.env['sale.order']
+        models_ids = request.env['sale.order'].search([])
+        for model in models_ids:
+            new_dict = model.read(list(set(sale_order_obj._fields)))
+            lst_orders.append(new_dict)
+
+        return {'result': lst_orders}
+
+    @http.route('/view/order/line', type='json', auth='user')
+    def view_order_line(self):
+        lst_orders_lines = []
+        order_line_obj = request.env['sale.order.line']
+        models_ids = request.env['sale.order.line'].search([])
+        for model in models_ids:
+            new_dict = model.read(list(set(order_line_obj._fields)))
+            lst_orders_lines.append(new_dict)
+
+        return {'result': lst_orders_lines}
+
+    @http.route('/view/order/line/id', type='json', auth='user')
+    def view_order_line_id(self, **rec):
+        lst_orders_line = []
+        sale_order_line_obj = request.env['sale.order.line']
+        models_ids = request.env['sale.order.line'].browse(rec.get('id'))
+        for model in models_ids:
+            new_dict = model.read(list(set(sale_order_line_obj._fields)))
+            lst_orders_line.append(new_dict)
+
+        return {'result': lst_orders_line}
